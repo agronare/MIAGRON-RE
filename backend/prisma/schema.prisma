@@ -1,0 +1,792 @@
+// ============================================================================
+// 🌾 AGRONARE — Prisma Schema
+// Base de datos PostgreSQL con modelos para ERP, CRM, RH, Logística, RPA, Finanzas
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// UTILIDADES
+// ────────────────────────────────────────────────────────────────────────────
+model FileUpload {
+  id        Int      @id @default(autoincrement())
+  filename  String
+  path      String
+  size      Int
+  mimeType  String
+  createdAt DateTime @default(now())
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// AUTH / USERS
+// ────────────────────────────────────────────────────────────────────────────
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String
+  telefono     String?
+  sucursal     String?
+  isActive     Boolean  @default(true)
+  verified     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  empleado Empleado?
+}
+
+model Empleado {
+  id                         Int       @id @default(autoincrement())
+  userId                     Int       @unique
+  primerNombre               String
+  segundoNombre              String?
+  apellidoPaterno            String
+  apellidoMaterno            String?
+  fechaNacimiento            DateTime?
+  rfc                        String?
+  curp                       String?
+  nss                        String?
+  direccion                  String?
+  contactoEmergenciaNombre   String?
+  contactoEmergenciaTelefono String?
+  departamento               String?
+  puesto                     String?
+  fechaIngreso               DateTime
+  tipoContrato               String?
+  salario                    Float?
+  frecuenciaPago             String?
+  estatus                    String
+  avatarUrl                  String?
+  portadaUrl                 String?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  // Relaciones inversas
+  incidencias IncidenciaNomina[]
+  prestamos   Prestamo[]
+  permisos    SolicitudPermiso[]
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// RH — Sucursales & Nómina
+// ────────────────────────────────────────────────────────────────────────────
+model Sucursal {
+  id          Int     @id @default(autoincrement())
+  nombre      String
+  codigoInterno String? @unique
+  estatus     String  @default("Activa")
+  ubicacion   String?
+  horarioAtencion String?
+  calleNumero String?
+  colonia     String?
+  municipio   String?
+  estado      String?
+  codigoPostal String?
+  responsable String?
+  telefono    String?
+  email       String?
+
+  // Relaciones
+  inventarios Inventario[]
+  movimientos InventarioMovimiento[]
+}
+
+model PeriodoNomina {
+  id               Int      @id @default(autoincrement())
+  nombre           String
+  frecuencia       String
+  fechaInicio      DateTime
+  fechaFin         DateTime
+  fechaPago        DateTime
+  estatus          String
+  montoTotal       Float?
+  empleadosCount   Int?
+  incidenciasCount Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  incidencias IncidenciaNomina[]
+}
+
+model IncidenciaNomina {
+  id         Int      @id @default(autoincrement())
+  empleadoId Int
+  periodoId  Int
+  tipo       String
+  fecha      DateTime
+  valor      Float
+  estatus    String
+  notas      String?
+
+  empleado Empleado      @relation(fields: [empleadoId], references: [id])
+  periodo  PeriodoNomina @relation(fields: [periodoId], references: [id])
+}
+
+model Prestamo {
+  id               Int      @id @default(autoincrement())
+  empleadoId       Int
+  monto            Float
+  plazoMeses       Int
+  deduccionMensual Float
+  motivo           String?
+  estatus          String
+  fechaSolicitud   DateTime
+
+  empleado Empleado @relation(fields: [empleadoId], references: [id])
+}
+
+model SolicitudPermiso {
+  id          Int      @id @default(autoincrement())
+  empleadoId  Int
+  tipo        String
+  fechaInicio DateTime
+  fechaFin    DateTime
+  dias        Int
+  motivo      String?
+  estatus     String
+  aprobadoPor String?
+
+  empleado Empleado @relation(fields: [empleadoId], references: [id])
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// ERP — Productos, Proveedores, Inventario, Cotizaciones, Compras, Activos
+// ────────────────────────────────────────────────────────────────────────────
+model Product {
+  id                Int      @id @default(autoincrement())
+  sku               String?
+  codigo            String   @unique
+  nombre            String
+  precio            Float    @default(0)
+  stock             Int      @default(0)
+  costo             Float?
+  descripcion       String?
+  categoria         String?
+  fabricante        String?
+  minStock          Int?     @default(0)
+  ingredienteActivo String?
+  porcentajeIA      Float?
+  iva               Float?
+  ieps              Float?
+  objetoImpuesto    String?
+  claveProdServ     String?
+  claveUnidad       String?
+  retencionIva      Boolean? @default(false)
+  retencionIsr      Boolean? @default(false)
+  imageKey          String?
+  isBulk            Boolean  @default(false)
+  unidadVenta       String?
+  unidadBase        String?
+  factorConversion  Float?
+  fichaTecnicaUrl   String?
+  guiaAplicacionUrl String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  inventarios        Inventario[]
+  movimientos        InventarioMovimiento[]
+  InventarioTransfer InventarioTransfer[]
+}
+
+model Provider {
+  id               Int      @id @default(autoincrement())
+  nombreEmpresa    String
+  nombreContacto   String
+  email            String
+  telefono         String?
+  rfc              String?
+  credito          Float?
+  habilitarCredito Boolean  @default(false)
+  saldoPendiente   Float?
+  fechaAlta        DateTime @default(now())
+  actualizadoEn    DateTime @updatedAt
+
+  compras       Purchase[]
+  recolecciones Recoleccion[]
+  abonos        AbonoProveedor[]
+}
+
+model Inventario {
+  id                  Int      @id @default(autoincrement())
+  productoId          Int
+  sucursalId          Int
+  cantidad            Int
+  lote                String?
+  ubicacion           String?
+  costoUnit           Float?
+  metodoCosto         String?
+  fechaIngreso        DateTime @default(now())
+  ultimaActualizacion DateTime @updatedAt
+
+  producto Product  @relation(fields: [productoId], references: [id])
+  sucursal Sucursal @relation(fields: [sucursalId], references: [id])
+}
+
+model InventarioMovimiento {
+  id           Int      @id @default(autoincrement())
+  productoId   Int
+  sucursalId   Int
+  tipo         String
+  cantidad     Int
+  costoUnit    Float?
+  referencia   String?
+  origenModulo String?
+  fecha        DateTime @default(now())
+
+  producto Product  @relation(fields: [productoId], references: [id])
+  sucursal Sucursal @relation(fields: [sucursalId], references: [id])
+}
+
+// Auditoría de transferencias de inventario
+model InventarioTransfer {
+  id                  Int      @id @default(autoincrement())
+  transferId          String   @unique
+  productoId          Int
+  origenSucursalId    Int
+  destinoSucursalId   Int
+  origenInventarioId  Int
+  destinoInventarioId Int
+  movimientoSalidaId  Int
+  movimientoEntradaId Int
+  cantidad            Int
+  costoUnit           Float?
+  lote                String?
+  referencia          String?
+  createdAt           DateTime @default(now())
+
+  producto Product @relation(fields: [productoId], references: [id])
+  // Relaciones opcionales (no estrictas) de auditoría: no se definen cascadas
+}
+
+model Quote {
+  id              Int      @id @default(autoincrement())
+  codigo          String   @unique
+  cliente         String
+  fechaCreacion   DateTime @default(now())
+  fechaExpiracion DateTime
+  estado          String
+  subtotal        Float
+  impuestos       Float
+  descuento       Float?
+  total           Float
+  notas           String?
+  createdBy       String
+  updatedAt       DateTime @updatedAt
+}
+
+model Purchase {
+  id          Int      @id @default(autoincrement())
+  codigo      String   @unique
+  proveedorId Int
+  fechaCompra DateTime @default(now())
+  metodoPago  String
+  subtotal    Float
+  impuestos   Float
+  total       Float
+  comentarios String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  quoteId     Int?
+
+  proveedor Provider @relation(fields: [proveedorId], references: [id])
+}
+
+// Pago/Abono a proveedor (cuentas por pagar)
+model AbonoProveedor {
+  id          Int      @id @default(autoincrement())
+  proveedorId Int
+  monto       Float
+  metodoPago  String?
+  referencia  String?
+  notas       String?
+  fecha       DateTime @default(now())
+
+  proveedor Provider @relation(fields: [proveedorId], references: [id])
+}
+
+model Activo {
+  id                  Int      @id @default(autoincrement())
+  codigo              String   @unique
+  nombre              String
+  descripcion         String?
+  categoria           String?
+  estado              String?
+  costo               Float
+  fechaCompra         DateTime
+  vidaUtil            Int?
+  sucursal            String?
+  depreciacionMensual Float?
+  valorActual         Float?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// CRM — Clientes, Créditos, Abonos, Oportunidades, Verificaciones
+// ────────────────────────────────────────────────────────────────────────────
+model Cliente {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  telefono    String?
+  email       String?
+  rfc         String?
+  direccion   String?
+  verificado  Boolean  @default(false)
+  creditLimit Float?
+  creditUsed  Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creditos       Credito[]
+  abonos         AbonoCliente[]
+  verificaciones ClienteVerificacion[]
+  oportunidades  Oportunidad[]
+  ventas         Venta[]
+}
+
+model Credito {
+  id               Int       @id @default(autoincrement())
+  clienteId        Int
+  monto            Float
+  montoAbonado     Float     @default(0)
+  fechaEmision     DateTime  @default(now())
+  fechaVencimiento DateTime?
+  estado           String
+  descripcion      String?
+  interes          Float?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+}
+
+model AbonoCliente {
+  id            Int      @id @default(autoincrement())
+  clienteId     Int
+  oportunidadId Int?
+  monto         Float
+  fecha         DateTime @default(now())
+  metodoPago    String?
+  referencia    String?
+  notas         String?
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+}
+
+model Oportunidad {
+  id          Int      @id @default(autoincrement())
+  clienteId   Int
+  descripcion String
+  monto       Float?
+  estado      String
+  createdAt   DateTime @default(now())
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+}
+
+model ClienteVerificacion {
+  id            Int      @id @default(autoincrement())
+  clienteId     Int
+  razonSocial   String?
+  direccion     String?
+  status        String?
+  resultado     String?
+  metodo        String?
+  mensaje       String?
+  ineFrenteUrl  String?
+  ineReversoUrl String?
+  selfieUrl     String?
+  fecha         DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  cliente Cliente @relation(fields: [clienteId], references: [id])
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// VENTAS Y FACTURACIÓN — Ventas, Items, Solicitudes CFDI
+// ────────────────────────────────────────────────────────────────────────────
+model Venta {
+  id            Int     @id @default(autoincrement())
+  folio         String  @unique // VENTA-1234
+  clienteId     Int?
+  clienteNombre String
+  clienteRfc    String?
+
+  // Detalles de venta
+  fecha          DateTime @default(now())
+  sucursal       String
+  subtotal       Float
+  impuestos      Float
+  descuentoTotal Float    @default(0)
+  total          Float
+
+  // Pago
+  metodoPago     String
+  referenciaPago String?
+  montoRecibido  Float?
+  cambioDevuelto Float?
+  montoPagado    Float   @default(0)
+  estatus        String // Pagado, Pendiente, Cancelado
+
+  // Facturación
+  requiereFactura Boolean @default(false)
+  ticketPdfBase64 String? @db.Text // PDF almacenado en DB
+
+  // CFDI
+  cfdiEstatus     String    @default("sin_solicitar") // sin_solicitar, solicitado, timbrado, error, cancelado
+  cfdiUuid        String?   @unique
+  cfdiXmlPath     String?
+  cfdiPdfPath     String?
+  cfdiErrorMsg    String?
+  cfdiTimbradoAt  DateTime?
+  cfdiPacProvider String? // FacturAPI, Facturama, etc.
+
+  // Datos fiscales SAT
+  regimenFiscal String?
+  usoCfdi       String? // G01, G03, etc.
+
+  // Metadata
+  creadoPor String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  cliente         Cliente?        @relation(fields: [clienteId], references: [id])
+  items           VentaItem[]
+  solicitudesCfdi SolicitudCfdi[]
+}
+
+model VentaItem {
+  id         Int  @id @default(autoincrement())
+  ventaId    Int
+  productoId Int?
+
+  // Detalles del producto (desnormalizados para precisión histórica)
+  sku            String
+  nombre         String
+  cantidad       Float
+  unidad         String @default("PZA")
+  precioUnitario Float
+  descuento      Float  @default(0) // Porcentaje
+  subtotal       Float
+  impuestoMonto  Float
+  total          Float
+
+  // Datos fiscales SAT 4.0
+  claveProdServ  String? // Clave SAT Producto/Servicio
+  claveUnidad    String? // Clave SAT Unidad
+  objetoImpuesto String? // 01, 02, 03, 04
+  tasaIva        Float?
+
+  venta Venta @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+}
+
+model SolicitudCfdi {
+  id               Int       @id @default(autoincrement())
+  ventaId          Int
+  clienteEmail     String
+  clienteTelefono  String?
+  estatusSolicitud String    @default("pendiente") // pendiente, procesando, completado, error
+  notaCliente      String?
+  createdAt        DateTime  @default(now())
+  procesadoAt      DateTime?
+
+  venta Venta @relation(fields: [ventaId], references: [id])
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// LOGÍSTICA — Vehículos, Viajes, Entregas, Recolecciones, Mantenimiento, Reportes
+// ────────────────────────────────────────────────────────────────────────────
+model Vehiculo {
+  id                Int      @id @default(autoincrement())
+  nombre            String
+  tipo              String?
+  capacidad         Int?
+  placas            String?
+  marca             String?
+  modelo            String?
+  kilometraje       Int?
+  kilometrajeActual Int?
+  estado            String   @default("Disponible")
+  activo            Boolean  @default(true)
+  conductorId       Int?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  viajes                    Viaje[]
+  mantenimientos            Mantenimiento[]
+  mantenimientosProgramados MantenimientoProgramado[]
+  reportesDiarios           VehiculoReporteDiario[]
+  itinerarios               Itinerario[]
+}
+
+model Viaje {
+  id          Int       @id @default(autoincrement())
+  nombre      String?
+  estado      String?
+  fechaInicio DateTime?
+  fechaFin    DateTime?
+  vehiculoId  Int?
+  conductorId Int?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  vehiculo      Vehiculo?     @relation(fields: [vehiculoId], references: [id])
+  entregas      Entrega[]
+  recolecciones Recoleccion[]
+}
+
+model Entrega {
+  id           Int      @id @default(autoincrement())
+  viajeId      Int
+  clienteId    Int
+  fechaEntrega DateTime
+  direccion    String?
+  estado       String?
+  notas        String?
+  recibio      String?
+  evidenciaUrl String?
+  createdAt    DateTime @default(now())
+
+  viaje Viaje @relation(fields: [viajeId], references: [id])
+}
+
+model Recoleccion {
+  id          Int      @id @default(autoincrement())
+  providerId  Int
+  viajeId     Int?
+  descripcion String?
+  direccion   String?
+  fecha       DateTime
+  estado      String?
+
+  proveedor Provider @relation(fields: [providerId], references: [id])
+  viaje     Viaje?   @relation(fields: [viajeId], references: [id])
+}
+
+model Mantenimiento {
+  id          Int      @id @default(autoincrement())
+  vehiculoId  Int
+  tipo        String?
+  descripcion String?
+  costo       Float?
+  fecha       DateTime
+  estado      String?
+
+  vehiculo Vehiculo @relation(fields: [vehiculoId], references: [id])
+}
+
+model MantenimientoProgramado {
+  id          Int       @id @default(autoincrement())
+  vehiculoId  Int
+  tipo        String?
+  descripcion String?
+  notas       String?
+  fecha       DateTime?
+  costo       Float?
+  estado      String?
+
+  vehiculo Vehiculo @relation(fields: [vehiculoId], references: [id])
+}
+
+model VehiculoReporteDiario {
+  id               Int      @id @default(autoincrement())
+  vehiculoId       Int
+  fecha            DateTime
+  distanciaTotalKm Float?
+  consumoLitros    Float?
+  costoCombustible Float?
+  tiempoActivoHr   Float?
+  velocidadPromKmH Float?
+  observaciones    String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  vehiculo Vehiculo @relation(fields: [vehiculoId], references: [id])
+}
+
+model Itinerario {
+  id                  Int      @id @default(autoincrement())
+  vehiculoId          Int
+  distanciaEstimadaKm Float?
+  costoEstimado       Float?
+  notas               String?
+  createdAt           DateTime @default(now())
+
+  vehiculo Vehiculo @relation(fields: [vehiculoId], references: [id])
+  paradas  Parada[]
+}
+
+model Parada {
+  id           Int      @id @default(autoincrement())
+  itinerarioId Int
+  nombre       String
+  orden        Int
+  tipo         String?
+  lat          Float?
+  lng          Float?
+  createdAt    DateTime @default(now())
+
+  itinerario Itinerario @relation(fields: [itinerarioId], references: [id])
+}
+
+model PlanRuta {
+  id        Int      @id @default(autoincrement())
+  nombre    String?
+  fecha     DateTime
+  notas     String?
+  createdAt DateTime @default(now())
+
+  visitas Visita[]
+}
+
+model Visita {
+  id         Int       @id @default(autoincrement())
+  planRutaId Int
+  clienteId  Int?
+  nombre     String?
+  direccion  String?
+  lat        Float?
+  lng        Float?
+  estado     String?
+  firmaUrl   String?
+  nota       String?
+  fecha      DateTime?
+
+  planRuta PlanRuta @relation(fields: [planRutaId], references: [id])
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// RPA — Bots, Logs y Schedules
+// ────────────────────────────────────────────────────────────────────────────
+model Bot {
+  id            Int       @id @default(autoincrement())
+  nombre        String
+  tipo          String?
+  descripcion   String?
+  activo        Boolean   @default(true)
+  schedule      String?
+  lastRun       DateTime?
+  creadoEn      DateTime  @default(now())
+  actualizadoEn DateTime  @updatedAt
+
+  logs      BotLog[]
+  schedules RpaSchedule[]
+}
+
+model BotLog {
+  id        Int      @id @default(autoincrement())
+  botId     Int
+  mensaje   String
+  exito     Boolean  @default(true)
+  ejecutado DateTime @default(now())
+
+  bot Bot @relation(fields: [botId], references: [id])
+}
+
+model RpaSchedule {
+  id        Int      @id @default(autoincrement())
+  botId     Int
+  cron      String
+  activo    Boolean  @default(true)
+  ejecutado DateTime @default(now())
+
+  bot Bot @relation(fields: [botId], references: [id])
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Finanzas — Movimientos y Asesorías
+// ────────────────────────────────────────────────────────────────────────────
+model MovimientoFinanciero {
+  id            Int      @id @default(autoincrement())
+  tipo          String
+  monto         Float
+  categoria     String?
+  descripcion   String?
+  fecha         DateTime @default(now())
+  sucursal      String?
+  oportunidadId Int?
+  clienteId     Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Asesoria {
+  id          Int       @id @default(autoincrement())
+  clienteId   Int?
+  asesor      String?
+  tema        String?
+  descripcion String?
+  fecha       DateTime?
+  notas       String?
+  estado      String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// CORTE DE CAJA — Sistema profesional de auditoría de efectivo
+// ────────────────────────────────────────────────────────────────────────────
+model CorteCaja {
+  id Int @id @default(autoincrement())
+
+  // Identificación del corte
+  folio              String   @unique // CORTE-SUC001-20250122-001
+  sucursal           String
+  fecha              DateTime @default(now())
+
+  // Responsables
+  realizadoPor       String   // Usuario que realizó el corte
+  aprobadoPor        String?  // Usuario que aprobó (si requirió aprobación)
+
+  // Montos calculados
+  fondoInicial       Float
+  ventasEfectivo     Float    // Total de ventas en efectivo del sistema
+  salidasEfectivo    Float    // Egresos manuales del día
+  totalEsperado      Float    // fondoInicial + ventasEfectivo - salidasEfectivo
+
+  // Conteo físico
+  totalContado       Float    // Total del dinero físico contado
+  desgloseDenominaciones Json // {"1000": 5, "500": 10, ...}
+
+  // Diferencia y validación
+  diferencia         Float    // totalContado - totalEsperado
+  tipoDiferencia     String?  // "SOBRANTE", "FALTANTE", "CUADRE_PERFECTO"
+  requiereAprobacion Boolean  @default(false)
+  estatusAprobacion  String?  // "PENDIENTE", "APROBADO", "RECHAZADO"
+
+  // Notas y justificación
+  observaciones      String?
+  justificacionDiferencia String?
+
+  // Documentos
+  ticketPdfBase64    String?  @db.Text
+  whatsappEnviado    Boolean  @default(false)
+
+  // Referencias a ventas incluidas
+  ventasFolios       Json?    // ["VENTA-1234", "VENTA-1235", ...]
+
+  // Auditoría
+  bloqueado          Boolean  @default(false) // Una vez cerrado, no se puede editar
+  fechaCierre        DateTime?
+  ipAddress          String?
+
+  // Timestamps
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([sucursal, fecha])
+  @@index([realizadoPor])
+  @@index([estatusAprobacion])
+}

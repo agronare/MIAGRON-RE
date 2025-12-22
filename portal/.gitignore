@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+
+# Environment variables (CRÍTICO - NO SUBIR)
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Vercel
+.vercel
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
