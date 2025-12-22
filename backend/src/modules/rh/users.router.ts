@@ -64,7 +64,7 @@ router.post('/login', async (req, res) => {
     if (!user) return res.status(401).json({ success: false, error: 'Usuario o contraseña inválidos' });
     const ok = await bcrypt.compare(password, user.passwordHash);
     if (!ok) return res.status(401).json({ success: false, error: 'Usuario o contraseña inválidos' });
-    const token = jwt.sign({ sub: user.id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
+    const token = jwt.sign({ sub: user.id, role: user.role }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
     res.json({ success: true, data: { token, user: { id: user.id, name: user.name, email: user.email, role: user.role } } });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FileText, Download, Calendar, MapPin, CreditCard, CheckCircle } from 'lucide-react';
+import { FileText, Calendar, MapPin, CheckCircle } from 'lucide-react';
 import type { Venta } from '../types';
 import DownloadButtons from './DownloadButtons';
 import CFDIRequestForm from './CFDIRequestForm';
