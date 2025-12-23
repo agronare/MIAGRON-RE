@@ -21,57 +21,86 @@
 
 ---
 
-## ⚠️ IMPORTANTE: Configuración Pendiente
+## ✅ Variables de Entorno Configuradas
 
-### 1. Variables de Entorno del Backend
+### Variables YA Configuradas:
+
+**Backend:**
+- ✅ `JWT_SECRET` - Configurado con valor seguro
+- ✅ `CORS_ORIGINS` - Configurado con URLs de Vercel
+- ⚠️ `DATABASE_URL` - **TEMPORAL - DEBES ACTUALIZARLO**
+
+**Frontend:**
+- ✅ `VITE_BACKEND_URL` - https://backend-ten-iota-99.vercel.app/api
+
+**Portal:**
+- ✅ `VITE_API_URL` - https://backend-ten-iota-99.vercel.app/api
+
+---
+
+## ⚠️ CRÍTICO: Actualizar Base de Datos
+
+El backend actualmente tiene un `DATABASE_URL` temporal que **NO FUNCIONA**. Necesitas:
+
+### 1. Crear Base de Datos PostgreSQL
+
+**Opción A - Neon (Recomendado - Gratis):**
+1. Ve a https://neon.tech
+2. Crea una cuenta
+3. Crea un nuevo proyecto
+4. Copia la Connection String
+
+**Opción B - Supabase (Gratis):**
+1. Ve a https://supabase.com
+2. Crea un proyecto
+3. Ve a Settings → Database
+4. Copia la Connection String (modo "Connection pooling")
+
+**Opción C - Railway:**
+1. Ve a https://railway.app
+2. Crea un proyecto PostgreSQL
+3. Copia la Connection String
+
+### 2. Actualizar DATABASE_URL en Vercel
 
 Ve a: https://vercel.com/agronares-projects/backend/settings/environment-variables
 
-Agrega las siguientes variables para **Production**:
+1. Busca `DATABASE_URL`
+2. Click en "Edit"
+3. Reemplaza con tu URL real de PostgreSQL
+4. Guarda los cambios
+
+### 3. Aplicar Migraciones de Prisma
 
 ```bash
-# Base de Datos (CRÍTICO)
-DATABASE_URL=postgresql://usuario:password@host:5432/database?schema=public
+cd backend
+DATABASE_URL="tu-url-real" npx prisma migrate deploy
+```
 
-# JWT (CRÍTICO - generar uno seguro)
-JWT_SECRET=<ejecuta: openssl rand -base64 32>
+### 4. Re-desplegar el Backend
 
-# CORS (actualizar con URLs reales)
-CORS_ORIGINS=https://frontend-seven-theta-28.vercel.app,https://portal-seven-orpin.vercel.app
+```bash
+cd backend
+vercel --prod
+```
 
-# FacturAPI (credenciales de producción)
+---
+
+## ⚠️ OPCIONAL: Configurar FacturAPI
+
+Si necesitas facturación electrónica, agrega estas variables en el backend:
+
+Ve a: https://vercel.com/agronares-projects/backend/settings/environment-variables
+
+```bash
 CFDI_PAC_PROVIDER=facturapi
 CFDI_PAC_API_KEY=sk_live_xxxxx
 CFDI_PAC_SECRET=xxxxx
 CFDI_MODO=production
-
-# Datos fiscales de la empresa
 COMPANY_RFC=AGR230616K40
 COMPANY_RAZON_SOCIAL=AGRONARE
 COMPANY_REGIMEN_FISCAL=601
 COMPANY_CP=58880
-
-# Opcionales pero recomendadas
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=200
-```
-
-### 2. Variables de Entorno del Frontend
-
-Ve a: https://vercel.com/agronares-projects/frontend/settings/environment-variables
-
-Agrega:
-```bash
-VITE_BACKEND_URL=https://backend-ten-iota-99.vercel.app/api
-```
-
-### 3. Variables de Entorno del Portal
-
-Ve a: https://vercel.com/agronares-projects/portal/settings/environment-variables
-
-Agrega:
-```bash
-VITE_API_URL=https://backend-ten-iota-99.vercel.app/api
 ```
 
 ---
