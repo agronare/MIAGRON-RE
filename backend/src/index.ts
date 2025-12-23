@@ -140,7 +140,13 @@ app.use(
   })
 );
 
-app.listen(PORT, () => {
-  console.log(`🌾 AGRONARE API escuchando en http://localhost:${PORT}/api`);
-  console.log(`🔎 Prisma Studio accesible via http://localhost:${PORT}/prisma`);
-});
+// Para desarrollo local
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🌾 AGRONARE API escuchando en http://localhost:${PORT}/api`);
+    console.log(`🔎 Prisma Studio accesible via http://localhost:${PORT}/prisma`);
+  });
+}
+
+// Exportar para Vercel serverless
+export default app;

@@ -1,0 +1,16 @@
+# Variables de entorno para Railway Backend
+# Copia y pega estas en Railway → Settings → Variables
+
+DATABASE_URL=postgresql://neondb_owner:npg_Vzr8WfiX5OTx@ep-lucky-wave-ahq1f3a8-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require
+
+JWT_SECRET=J+QdpyGwQuhZgt4+hyxDnO7HMki4LBhEHcetvzV1t60=
+
+CORS_ORIGINS=https://frontend-seven-theta-28.vercel.app,https://portal-seven-orpin.vercel.app
+
+NODE_ENV=production
+
+PORT=4000
+
+RATE_LIMIT_WINDOW_MS=900000
+
+RATE_LIMIT_MAX=200
